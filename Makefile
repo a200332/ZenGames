@@ -35,9 +35,10 @@
 
 
 
-MAIN	= # example: Main.pas
+MAIN	= example/Main.pas
 
-OUTPUT	= # example: pacman
+OUTPUT	= example/game
+
 
 
 # Don't move. Allways last.
