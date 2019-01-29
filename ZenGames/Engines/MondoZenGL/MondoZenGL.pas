@@ -5195,8 +5195,9 @@ type
       Remarks:
         Raises an exception if the sound cannot be created. }
     constructor Create(const MaxChannels: Integer = 8); overload;
+    {$IFDEF USE_ALUT}
     constructor Create(const MaxChannels: Integer; waveshape: LongInt; frequency: Single; phase: Single; duration: Single); overload;
-
+    {$ENDIF USE_ALUT}
 
     { Summary:
         Creates a sound from a file on disk or in a ZIP archive.
@@ -7607,6 +7608,7 @@ begin
     raise EMZError.Create(RS_MZ_ERROR_CANNOT_LOAD_SOUND);
 end;
 
+{$IFDEF USE_ALUT}
 constructor TMZStaticSound.Create(const MaxChannels: Integer; waveshape: LongInt; frequency: Single; phase: Single; duration: Single);
 begin
   inherited Create;
@@ -7615,6 +7617,7 @@ begin
     raise EMZError.Create(RS_MZ_ERROR_CANNOT_CREATE_SOUND);
 
 end;
+{$ENDIF USE_ALUT}
 
 destructor TMZStaticSound.Destroy;
 begin

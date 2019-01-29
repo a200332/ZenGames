@@ -30,7 +30,9 @@ interface
 const
 {$IFDEF LINUX}
   libopenal = 'libopenal.so';
+  {$IFDEF USE_ALUT}
   libalut   = 'libalut.so';
+  {$ENDIF USE_ALUT}
 {$ENDIF}
 {$IFDEF WINDOWS}
   libopenal = 'openal32.dll';
@@ -74,15 +76,17 @@ const
   AL_LOOPING                                =$1007;
   AL_GAIN                                   =$100A;
   AL_FREQUENCY                              =$2001;
-
+{$IFDEF USE_ALUT}
   ALUT_WAVEFORM_SINE                        =$100;
   ALUT_WAVEFORM_SQUARE                      =$101;
   ALUT_WAVEFORM_SAWTOOTH                    =$102;
   ALUT_WAVEFORM_WHITENOISE                  =$103;
   ALUT_WAVEFORM_IMPULSE                     =$104;
 
-function  InitOpenAL : Boolean;
 function  InitALUT : Boolean;
+{$ENDIF USE_ALUT}
+
+function  InitOpenAL : Boolean;
 procedure FreeOpenAL;
 
 function oal_GetSource( Source : Pointer ) : LongWord;
@@ -140,7 +144,10 @@ type
 var
   {$IFNDEF ANDROID}
   oalLibrary : {$IFDEF WINDOWS} LongWord {$ELSE} Pointer {$ENDIF};
+
+  {$IFDEF USE_ALUT}
   oalutLibrary : Pointer;
+  {$ENDIF USE_ALUT}
 
   alcGetString              : function(device: PALCdevice; param: LongInt): PAnsiChar; cdecl;
   alGetError                : function(device: PALCdevice): LongInt; cdecl;
@@ -172,9 +179,12 @@ var
   alDeleteBuffers           : procedure(n: LongInt; const buffers: PLongWord); cdecl;
   alBufferData              : procedure(bid: LongWord; format: LongInt; data: Pointer; size: LongInt; freq: LongInt); cdecl;
 
+  {$IFDEF USE_ALUT}
   alutInitWithoutContext    : function(argcp: PAnsiChar; argv: PAnsiChar): Boolean; cdecl;
   alutExit                  : function(): Boolean; cdecl;
   alutCreateBufferWaveform  : function(waveshape: LongInt; frequency: Single; phase: Single; duration: Single) : LongInt; cdecl;
+  {$ENDIF USE_ALUT}
+
   {$ENDIF}
 
   oalDevice   : PALCdevice  = nil;
@@ -193,6 +203,7 @@ implementation
 uses
   zgl_utils;
 
+{$IFDEF USE_ALUT}
 function InitALUT : Boolean;
 begin
 
@@ -211,6 +222,7 @@ begin
       Result := FALSE;
 
 end;
+{$ENDIF USE_ALUT}
 
 function InitOpenAL : Boolean;
 begin
@@ -262,7 +274,11 @@ procedure FreeOpenAL;
 begin
 {$IFNDEF ANDROID}
   dlclose( oalLibrary );
+
+  {$IFDEF USE_ALUT}
   dlclose( oalutLibrary );
+  {$ENDIF USE_ALUT}
+
 {$ENDIF}
 end;
 
