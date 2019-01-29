@@ -157,7 +157,8 @@ type
 procedure snd_MainLoop;
 function  snd_Init : Boolean;
 procedure snd_Free;
-function  snd_Add( SourceCount : Integer ) : zglPSound;
+function  snd_Add( SourceCount : Integer ) : zglPSound; overload;
+function  snd_Add( SourceCount : Integer; waveshape: LongInt; frequency: Single; phase: Single; duration: Single): zglPSound; overload;
 procedure snd_Del( var Sound : zglPSound );
 procedure snd_Create( var Sound : zglTSound; Format : LongWord );
 function  snd_LoadFromFile( const FileName : UTF8String; SourceCount : Integer = 8 ) : zglPSound;
@@ -398,6 +399,13 @@ begin
       log_Add( 'Error while loading ' + libopenal );
       exit;
     end;
+
+    log_Add( 'ALUT: load ' + libalut  );
+    if not InitALUT Then
+    begin
+      log_Add( 'Error while loading ' + libalut);
+      exit;
+    end;
   {$ENDIF}
 
   {$IFDEF LINUX}
@@ -439,6 +447,7 @@ begin
   log_Add( 'OpenAL: creating context' );
   {$IFNDEF ANDROID}
   oalContext := alcCreateContext( oalDevice, nil );
+  alutInitWithoutContext(nil, nil);
   {$ELSE}
   attr[ 0 ] := $1007;
   attr[ 1 ] := 22050;
@@ -557,6 +566,7 @@ begin
   log_Add( 'OpenAL: closing sound device' );
   alcCloseDevice( oalDevice );
   log_Add( 'OpenAL: sound system finalized' );
+  alutExit();
   FreeOpenAL();
 {$ELSE}
   for i := 1 to SND_MAX do
@@ -632,6 +642,12 @@ begin
   Sound := nil;
 
   DEC( managerSound.Count.Items );
+end;
+
+function snd_Add( SourceCount : Integer; waveshape: LongInt; frequency: Single; phase: Single; duration: Single): zglPSound; overload;
+begin
+  result := snd_Add(SourceCount);
+  result.Buffer := alutCreateBufferWaveform(waveshape, frequency, phase, duration);
 end;
 
 procedure snd_Create( var Sound : zglTSound; Format : LongWord );

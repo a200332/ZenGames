@@ -4,6 +4,8 @@ program Game;
 
 uses
   zglHeader,
+
+  zgl_sound_openal,
   MondoZenGL;
 
 const
@@ -17,10 +19,9 @@ var
 
 type TGameScene = class(TMZScene)
 private
-    timer     : TMZTimer;
     texLogo   : TMZTexture;
+    sndWave   : TMZStaticSound;
 
-    procedure TimerExpired(Sender: TObject);
 protected
     { Summary:
         Is called before the scene is executed. You can override this method
@@ -36,26 +37,42 @@ protected
         Is called during each iteration of the main loop to render the current
         frame. }
     procedure RenderFrame; override;
+
+    procedure Update(const DeltaTimeMs: Double); override;
+
+end;
+
+function CalcX2D(const X: Single): Single;
+begin
+  Result := (X - SCRW / 2)  * (1 / SCRW / 2);
+end;
+
+function CalcY2D(const Y:Single): Single;
+begin
+  Result := (Y - SCRH / 2) * (1 / SCRH / 2);
 end;
 
 
-
-
-procedure TGameScene.TimerExpired(Sender: TObject);
+procedure TGameScene.Update(const DeltaTimeMs: Double);
 begin
+  inherited Update(DeltaTimeMs);
+
   Application.Caption := TMZUtils.Format(TITLE + ' [%d FPS]', [Application.CurrentRenderFrameRate]);
 
   if TMZKeyboard.IsKeyPressed(kcEscape) then
     Application.Quit;
 
+  if TMZMouse.IsButtonDown(mbLeft) then
+        sndWave.Play(False, CalcX2D(TMZMouse.X), CalcY2D(TMZMouse.Y));
+
   TMZKeyboard.ClearState;
+  TMZMouse.ClearState;
 end;
 
 
 procedure TGameScene.Startup;
 begin
   inherited Startup;
-  timer   := TMZTimer.Create(TimerExpired, 1000);
 
 {$IFDEF PACKBIN}
   { Load the image/audio/video/etc from itself }
@@ -63,6 +80,7 @@ begin
 {$ENDIF}
 
   texLogo := TMZTexture.Create(RESOURCE_DIR + 'mondozengl.png');
+  sndWave := TMZStaticSound.Create(1, ALUT_WAVEFORM_SQUARE, 440.0, 0.0, 0.3);
 
 {$IFDEF PACKBIN}
 { Close at some point, when you no longer need it. }
@@ -73,7 +91,7 @@ end;
 procedure TGameScene.Shutdown;
 begin
   texLogo.Free;
-  timer.Free;
+  sndWave.Free;
   inherited Shutdown;
 end;
 
@@ -89,10 +107,9 @@ end;
 
 begin
   Application := TMZApplication.Create;
+  Application.Options := [aoShowCursor, aoUseSound];
 {$IFNDEF DEBUG}
-  Application.Options := Application.Options + [aoShowCursor] - [aoEnableLogging];
-{$ELSE}
-  Application.Options := Application.Options + [aoShowCursor];
+  Application.Options := Application.Options - [aoEnableLogging];
 {$ENDIF}
   Application.Caption       := TITLE;
   Application.ScreenWidth   := SCRW;

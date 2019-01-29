@@ -5191,6 +5191,8 @@ type
       Remarks:
         Raises an exception if the sound cannot be created. }
     constructor Create(const MaxChannels: Integer = 8); overload;
+    constructor Create(const MaxChannels: Integer; waveshape: LongInt; frequency: Single; phase: Single; duration: Single); overload;
+
 
     { Summary:
         Creates a sound from a file on disk or in a ZIP archive.
@@ -7523,6 +7525,7 @@ end;
 
 { TMZStaticSound }
 
+
 constructor TMZStaticSound.Create(const MaxChannels: Integer);
 begin
   inherited Create;
@@ -7581,6 +7584,15 @@ begin
   FHandle := snd_LoadFromMemory(Memory.FSettings, Extension, MaxChannels);
   if (FHandle = nil) then
     raise EMZError.Create(RS_MZ_ERROR_CANNOT_LOAD_SOUND);
+end;
+
+constructor TMZStaticSound.Create(const MaxChannels: Integer; waveshape: LongInt; frequency: Single; phase: Single; duration: Single);
+begin
+  inherited Create;
+  FHandle := snd_Add(MaxChannels, waveshape, frequency, phase, duration);
+  if (FHandle = nil) then
+    raise EMZError.Create(RS_MZ_ERROR_CANNOT_CREATE_SOUND);
+
 end;
 
 destructor TMZStaticSound.Destroy;

@@ -30,6 +30,7 @@ interface
 const
 {$IFDEF LINUX}
   libopenal = 'libopenal.so';
+  libalut   = 'libalut.so';
 {$ENDIF}
 {$IFDEF WINDOWS}
   libopenal = 'openal32.dll';
@@ -74,7 +75,14 @@ const
   AL_GAIN                                   =$100A;
   AL_FREQUENCY                              =$2001;
 
+  ALUT_WAVEFORM_SINE                        =$100;
+  ALUT_WAVEFORM_SQUARE                      =$101;
+  ALUT_WAVEFORM_SAWTOOTH                    =$102;
+  ALUT_WAVEFORM_WHITENOISE                  =$103;
+  ALUT_WAVEFORM_IMPULSE                     =$104;
+
 function  InitOpenAL : Boolean;
+function  InitALUT : Boolean;
 procedure FreeOpenAL;
 
 function oal_GetSource( Source : Pointer ) : LongWord;
@@ -124,36 +132,41 @@ type
 var
   {$IFNDEF ANDROID}
   oalLibrary : {$IFDEF WINDOWS} LongWord {$ELSE} Pointer {$ENDIF};
+  oalutLibrary : Pointer;
 
-  alcGetString           : function(device: PALCdevice; param: LongInt): PAnsiChar; cdecl;
-  alGetError             : function(device: PALCdevice): LongInt; cdecl;
+  alcGetString              : function(device: PALCdevice; param: LongInt): PAnsiChar; cdecl;
+  alGetError                : function(device: PALCdevice): LongInt; cdecl;
   // Device
-  alcOpenDevice          : function(const devicename: PAnsiChar): PALCdevice; cdecl;
-  alcCloseDevice         : function(device: PALCdevice): Boolean; cdecl;
+  alcOpenDevice             : function(const devicename: PAnsiChar): PALCdevice; cdecl;
+  alcCloseDevice            : function(device: PALCdevice): Boolean; cdecl;
   // Context
-  alcCreateContext       : function(device: PALCdevice; const attrlist: PLongInt): PALCcontext; cdecl;
-  alcMakeContextCurrent  : function(context: PALCcontext): Boolean; cdecl;
-  alcDestroyContext      : procedure(context: PALCcontext); cdecl;
+  alcCreateContext          : function(device: PALCdevice; const attrlist: PLongInt): PALCcontext; cdecl;
+  alcMakeContextCurrent     : function(context: PALCcontext): Boolean; cdecl;
+  alcDestroyContext         : procedure(context: PALCcontext); cdecl;
   // Listener
-  alListenerfv           : procedure(param: LongInt; const values: PSingle); cdecl;
+  alListenerfv              : procedure(param: LongInt; const values: PSingle); cdecl;
   // Sources
-  alGenSources           : procedure(n: LongInt; sources: PLongWord); cdecl;
-  alDeleteSources        : procedure(n: LongInt; const sources: PLongWord); cdecl;
-  alSourcei              : procedure(sid: LongWord; param: LongInt; value: LongInt); cdecl;
-  alSourcef              : procedure(sid: LongWord; param: LongInt; value: Single); cdecl;
-  alSourcefv             : procedure(sid: LongWord; param: LongInt; const values: PSingle); cdecl;
-  alGetSourcei           : procedure(sid: LongWord; param: LongInt; out value: LongInt); cdecl;
-  alSourcePlay           : procedure(sid: LongWord); cdecl;
-  alSourcePause          : procedure(sid: LongWord); cdecl;
-  alSourceStop           : procedure(sid: LongWord); cdecl;
-  alSourceRewind         : procedure(sid: LongWord); cdecl;
+  alGenSources              : procedure(n: LongInt; sources: PLongWord); cdecl;
+  alDeleteSources           : procedure(n: LongInt; const sources: PLongWord); cdecl;
+  alSourcei                 : procedure(sid: LongWord; param: LongInt; value: LongInt); cdecl;
+  alSourcef                 : procedure(sid: LongWord; param: LongInt; value: Single); cdecl;
+  alSourcefv                : procedure(sid: LongWord; param: LongInt; const values: PSingle); cdecl;
+  alGetSourcei              : procedure(sid: LongWord; param: LongInt; out value: LongInt); cdecl;
+  alSourcePlay              : procedure(sid: LongWord); cdecl;
+  alSourcePause             : procedure(sid: LongWord); cdecl;
+  alSourceStop              : procedure(sid: LongWord); cdecl;
+  alSourceRewind            : procedure(sid: LongWord); cdecl;
   //
-  alSourceQueueBuffers   : procedure(sid: LongWord; numEntries: LongInt; const bids: PLongWord); cdecl;
-  alSourceUnqueueBuffers : procedure(sid: LongWord; numEntries: LongInt; bids: PLongWord); cdecl;
+  alSourceQueueBuffers      : procedure(sid: LongWord; numEntries: LongInt; const bids: PLongWord); cdecl;
+  alSourceUnqueueBuffers    : procedure(sid: LongWord; numEntries: LongInt; bids: PLongWord); cdecl;
   // Buffers
-  alGenBuffers           : procedure(n: LongInt; buffers: PLongWord); cdecl;
-  alDeleteBuffers        : procedure(n: LongInt; const buffers: PLongWord); cdecl;
-  alBufferData           : procedure(bid: LongWord; format: LongInt; data: Pointer; size: LongInt; freq: LongInt); cdecl;
+  alGenBuffers              : procedure(n: LongInt; buffers: PLongWord); cdecl;
+  alDeleteBuffers           : procedure(n: LongInt; const buffers: PLongWord); cdecl;
+  alBufferData              : procedure(bid: LongWord; format: LongInt; data: Pointer; size: LongInt; freq: LongInt); cdecl;
+
+  alutInitWithoutContext    : function(argcp: PAnsiChar; argv: PAnsiChar): Boolean; cdecl;
+  alutExit                  : function(): Boolean; cdecl;
+  alutCreateBufferWaveform  : function(waveshape: LongInt; frequency: Single; phase: Single; duration: Single) : LongInt; cdecl;
   {$ENDIF}
 
   oalDevice   : PALCdevice  = nil;
@@ -171,6 +184,25 @@ var
 implementation
 uses
   zgl_utils;
+
+function InitALUT : Boolean;
+begin
+
+  Result := FALSE;
+  oalutLibrary := dlopen( libalut, $001);
+  if oalutLibrary = nil Then oalutLibrary := dlopen( PAnsiChar( libalut + '.1' ), $001 );
+  if oalutLibrary = nil Then oalutLibrary := dlopen( PAnsiChar( libalut + '.0' ), $001 );
+
+  if oalutLibrary <> LIB_ERROR Then
+    begin
+      alutInitWithoutContext    := dlsym( oalutLibrary, 'alutInitWithoutContext');
+      alutExit                  := dlsym( oalutLibrary, 'alutExit');
+      alutCreateBufferWaveform  := dlsym( oalutLibrary, 'alutCreateBufferWaveform');
+      Result := TRUE;
+    end else
+      Result := FALSE;
+
+end;
 
 function InitOpenAL : Boolean;
 begin
@@ -212,6 +244,7 @@ begin
       Result := TRUE;
     end else
       Result := FALSE;
+
 {$ELSE}
   Result := TRUE;
 {$ENDIF}
@@ -221,6 +254,7 @@ procedure FreeOpenAL;
 begin
 {$IFNDEF ANDROID}
   dlclose( oalLibrary );
+  dlclose( oalutLibrary );
 {$ENDIF}
 end;
 
