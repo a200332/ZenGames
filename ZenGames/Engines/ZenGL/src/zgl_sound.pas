@@ -178,6 +178,10 @@ procedure snd_StopStream( ID : Integer );
 procedure snd_ResumeStream( ID : Integer );
 procedure snd_SeekStream( ID : Integer; Milliseconds : Double );
 
+procedure snd_SetListenerPosition(const Position: PListenerPosition); inline;
+procedure snd_SetListenerOrientation(const Orientation: PListenerOrientation); inline;
+procedure snd_SetListenerVelocity(const Velocity: PListenerVelocity); inline;
+
 {$IFDEF iOS}
 const
   kAudioSessionCategory_AmbientSound                  = 'ibma';
@@ -240,6 +244,21 @@ var
   sfThread : array[ 1..SND_MAX ] of zglTThread;
   sfCS     : array[ 1..SND_MAX ] of zglTCriticalSection;
   sfEvent  : array[ 1..SND_MAX ] of zglTEvent;
+
+procedure snd_SetListenerPosition(const Position: PListenerPosition);
+begin
+  alListenerfv( AL_POSITION, PSingle(Position));
+end;
+
+procedure snd_SetListenerOrientation(const Orientation: PListenerOrientation);
+begin
+  alListenerfv( AL_ORIENTATION, PSingle(Orientation));
+end;
+
+procedure snd_SetListenerVelocity(const Velocity: PListenerVelocity);
+begin
+  alListenerfv( AL_VELOCITY, PSingle(Velocity));
+end;
 
 function GetStatusPlaying( const Source : {$IFDEF USE_OPENAL} LongWord {$ELSE} IDirectSoundBuffer {$ENDIF} ) : Integer;
   var
@@ -468,9 +487,9 @@ begin
       exit;
     end;
 
-  alListenerfv( AL_POSITION,    @oalPosition );
-  alListenerfv( AL_VELOCITY,    @oalVelocity );
-  alListenerfv( AL_ORIENTATION, @oalOrientation );
+  snd_SetListenerPosition(@oalPosition);
+  snd_SetListenerOrientation(@oalOrientation);
+  snd_SetListenerVelocity(@oalVelocity);
 
   for i := 1 to SND_MAX do
     begin

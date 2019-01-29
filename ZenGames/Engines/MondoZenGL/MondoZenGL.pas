@@ -152,6 +152,7 @@ uses
   zgl_resources,
   zgl_screen,
   zgl_sound,
+  zgl_sound_openal,
   zgl_sound_wav,
   zgl_sound_ogg,
   zgl_sprite_2d,
@@ -5158,6 +5159,9 @@ type
       Abstract base class for <link TMZStaticSound> and <link TMZStreamingSound>. }
   TMZSound = class abstract
   public
+    procedure ListenerPosition(Position: PListenerPosition);
+    procedure ListenerVelocity(Velocity: PListenerVelocity);
+    procedure ListenerOrientation(Orientation: PListenerOrientation);
   end;
 
 const
@@ -7355,6 +7359,23 @@ begin
   end;
   inherited Destroy;
 end;
+
+{ TMZSound }
+procedure TMZSound.ListenerPosition(Position: PListenerPosition);
+begin
+  snd_SetListenerPosition(Position);
+end;
+
+procedure TMZSound.ListenerVelocity(Velocity: PListenerVelocity);
+begin
+  snd_SetListenerVelocity(Velocity);
+end;
+
+procedure TMZSound.ListenerOrientation(Orientation: PListenerOrientation);
+begin
+  snd_SetListenerOrientation(Orientation);
+end;
+
 
 { TMZStreamingSound }
 

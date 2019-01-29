@@ -97,6 +97,14 @@ type
   ALCcontext  = record
   end;
 
+type
+  PListenerOrientation  = ^ListenerOrientation;
+  PListenerPosition     = ^ListenerPosition;
+  PListenerVelocity     = ^ListenerVelocity;
+  ListenerOrientation   = array [0 .. 5] of Single;
+  ListenerPosition      = array [0 .. 2] of Single;
+  ListenerVelocity      = array [0 .. 2] of Single;
+
 {$IFDEF ANDROID}
   function alcGetString(device: PALCdevice; param: LongInt): PAnsiChar; cdecl; external libopenal;
   function alGetError(device: PALCdevice): LongInt; cdecl; external libopenal;
@@ -175,9 +183,9 @@ var
   oalSrcPtrs  : array of Pointer;
   oalSrcState : array of LongWord;
 
-  oalPosition    : array[ 0..2 ] of Single = ( 0.0, 0.0, 0.0);
-  oalVelocity    : array[ 0..2 ] of Single = ( 0.0, 0.0, 0.0 );
-  oalOrientation : array[ 0..5 ] of Single = ( 0.0, 0.0, -1.0, 0.0, 1.0, 0.0 );
+  oalPosition    : ListenerPosition     = ( 0.0, 0.0, 0.0);
+  oalVelocity    : ListenerVelocity     = ( 0.0, 0.0, 0.0 );
+  oalOrientation : ListenerOrientation  = ( 0.0, 0.0, -1.0, 0.0, 1.0, 0.0 );
 
   oalFormat  : array[ 1..2 ] of LongInt = ( AL_FORMAT_MONO16, AL_FORMAT_STEREO16 );
 
